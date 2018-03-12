@@ -10,18 +10,21 @@ type rc struct{ io.Reader }
 
 func (r *rc) Close() error { return nil }
 
-func TestRMC(t *testing.T) {
-	s := `$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230318,003.1,W*6A
-$GPRMC,025503.00,A,3724.59431,N,12206.83813,W,0.003,,120318,,,D*62
-`
-	g := newGPS(&rc{strings.NewReader(s)})
-	for i := 0; i < 2; i++ {
+func TestRMCFix(t *testing.T) {
+	tts := []string{
+		"$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230318,003.1,W*6A\n",
+		"$GPRMC,025503.00,A,1111.22222,N,01111.33333,W,0.003,,120318,,,D*62\n",
+		"$GPRMC,043019.00,V,,,,,,,120318,,,N*7B\n",
+		"$GPRMC,044735.00,A,2222.11111,N,02222.44444,W,1.339,,120318,,,A*6E\n",
+	}
+	for i, tt := range tts {
+		g := newGPS(&rc{strings.NewReader(tt)})
 		msg, ok := <-g.NMEA()
 		if !ok {
-			t.Fatal("expected message, got closed channel")
+			t.Fatalf("#%d: expected message, got closed channel", i)
 		}
 		if msg.Fix().IsZero() {
-			t.Fatal("wrong time")
+			t.Fatalf("#%d: wrong time", i)
 		}
 		t.Log(msg.Fix())
 	}

@@ -27,25 +27,29 @@ cmd <- RMC / unk
 RMC <- 'RMC'		{ p.nmea = &p.rmc }
 	',' <fix>	{ p.rmc.fix = text }
 	',' <status>	{ p.rmc.status = text }
-	',' <lat>	{ p.rmc.lat = text }
-	',' <lon>	{ p.rmc.lon = text }
-	',' <knots>	{ p.rmc.knots.parse(text) }
-	',' <track>	{ p.rmc.track = text }
+	',' (<lat>	{ p.rmc.lat = text })?
+	',' ns?
+	',' (<lon>	{ p.rmc.lon = text })?
+	',' we?
+	',' (<knots>	{ p.rmc.knots.parse(text) })?
+	',' (<track>	{ p.rmc.track = text })?
 	',' <date>	{ p.rmc.date = text }
-	',' <magvar>	{ p.rmc.magvar = text }
-	',D'? # don't know why this appears
+	',' (<magvar>	{ p.rmc.magvar = text })?
+	',' nswe?
+	(','[ADN])? # don't know why this appears
 	    <chksum>	{ p.rmc.chksum = text }
-
-# $GPRMC,025503.00,A,3724.59431,N,12206.83813,W,0.003,,120318,,,D*62
 
 fix <- [0-9]+('.'[0-9]+)?
 status <- [AV]
-lat <- [0-9]+'.'[0-9]+','[NS]
-lon <- [0-9]+'.'[0-9]+','[WE]
+ns <- [NS]
+we <- [WE]
+nswe <- ns/we
+lat <- [0-9]+'.'[0-9]+
+lon <- [0-9]+'.'[0-9]+
 knots <- [0-9]+'.'[0-9]+
-track <- ([0-9]+'.'[0-9]+)?
+track <- [0-9]+'.'[0-9]+
 date <- [0-9]+
-magvar <- ([0-9]+'.'[0-9]+)?','[NSWE]?
+magvar <- [0-9]+'.'[0-9]+
 chksum <- '*'[0-9A-F][0-9A-F]
 
 # Unknown command
