@@ -1,0 +1,52 @@
+# NMEA grammar adapted from http://www.gpsinformation.org/dale/nmea.htm
+package gps
+
+type nmeaGrammar Peg {
+	nmea NMEA
+	rmc RMC
+}
+
+NMEA <- <'$GP' cmd '\n'> { p.nmea = &nmeaLine{text, p.nmea} }
+cmd <- RMC / unk
+
+# RMC - NMEA has its own version of essential gps pvt (position, velocity, time) data.
+# It is called RMC, The Recommended Minimum, which will look similar to:
+#
+# $GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230318,003.1,W*6A
+# Where:
+#     RMC          Recommended Minimum sentence C
+#     123519       Fix taken at 12:35:19 UTC
+#     A            Status A=active or V=Void.
+#     4807.038,N   Latitude 48 deg 07.038' N
+#     01131.000,E  Longitude 11 deg 31.000' E
+#     022.4        Speed over the ground in knots
+#     084.4        Track angle in degrees True
+#     230318       Date - 23rd of March 2018
+#     003.1,W      Magnetic Variation
+#     *6A          The checksum data, always begins with *
+RMC <- 'RMC'		{ p.nmea = &p.rmc }
+	',' <fix>	{ p.rmc.fix = text }
+	',' <status>	{ p.rmc.status = text }
+	',' <lat>	{ p.rmc.lat = text }
+	',' <lon>	{ p.rmc.lon = text }
+	',' <knots>	{ p.rmc.knots.parse(text) }
+	',' <track>	{ p.rmc.track = text }
+	',' <date>	{ p.rmc.date = text }
+	',' <magvar>	{ p.rmc.magvar = text }
+	',D'? # don't know why this appears
+	    <chksum>	{ p.rmc.chksum = text }
+
+# $GPRMC,025503.00,A,3724.59431,N,12206.83813,W,0.003,,120318,,,D*62
+
+fix <- [0-9]+('.'[0-9]+)?
+status <- [AV]
+lat <- [0-9]+'.'[0-9]+','[NS]
+lon <- [0-9]+'.'[0-9]+','[WE]
+knots <- [0-9]+'.'[0-9]+
+track <- ([0-9]+'.'[0-9]+)?
+date <- [0-9]+
+magvar <- ([0-9]+'.'[0-9]+)?','[NSWE]?
+chksum <- '*'[0-9A-F][0-9A-F]
+
+# Unknown command
+unk <- (!'\n'.)* { p.nmea = &nmeaBase{} }

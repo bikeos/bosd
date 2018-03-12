@@ -1,0 +1,13 @@
+# Gopkg.toml
+#
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
+# for detailed Gopkg.toml documentation.
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.1"
+
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true
