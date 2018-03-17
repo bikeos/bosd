@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/bikeos/bosd/gps"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/bikeos/bosd/gps"
+	"github.com/bikeos/bosd/internal/daemon"
 )
 
 var (
@@ -14,12 +16,14 @@ var (
 		Use:   "bosd",
 		Short: "The multi-purpose bikeOS binary and daemon.",
 	}
-	flagDevGPS  string
-	flagSetTime bool
+	flagDevGPS     string
+	flagSetTime    bool
+	flagOutDirPath string
 )
 
 func init() {
 	cobra.EnablePrefixMatching = true
+
 	gpsCmd := &cobra.Command{
 		Use:   "gps <subcommand> <value>",
 		Short: "creates a key with a given value",
@@ -33,6 +37,14 @@ func init() {
 	gpsTimeCmd.Flags().BoolVar(&flagSetTime, "set", false, "set system time")
 	gpsCmd.AddCommand(gpsTimeCmd)
 	rootCmd.AddCommand(gpsCmd)
+
+	daemonCmd := &cobra.Command{
+		Use:   "daemon",
+		Short: "start the bikeOS daemon",
+		Run:   daemonCommand,
+	}
+	daemonCmd.Flags().StringVar(&flagOutDirPath, "outdir", "/media/sdcard", "directory for recorded data")
+	rootCmd.AddCommand(daemonCmd)
 }
 
 func gpsTimeCommand(cmd *cobra.Command, args []string) {
@@ -55,6 +67,13 @@ func gpsTimeCommand(cmd *cobra.Command, args []string) {
 	panic("gps closed: " + g.Close().Error())
 }
 
+func daemonCommand(cmd *cobra.Command, args []string) {
+	cfg := daemon.Config{
+		OutDirPath: flagOutDirPath,
+	}
+	fatalIf(daemon.Run(cfg))
+}
+
 func main() {
 	rootCmd.SetHelpTemplate(`{{.UsageString}}`)
 	fatalIf(rootCmd.Execute())
@@ -62,6 +81,7 @@ func main() {
 
 func fatalIf(err error) {
 	if err != nil {
+		log.Error(err)
 		panic(err)
 	}
 }

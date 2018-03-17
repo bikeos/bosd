@@ -23,3 +23,11 @@ Set the system time to GPS time:
 ```sh
 bosd gps date --set
 ```
+
+### Daemon
+
+Record device data to `abc`:
+
+```sh
+bosd daemon --outdir=abc
+```
