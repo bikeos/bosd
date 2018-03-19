@@ -8,6 +8,30 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mdlayher/genetlink"
+  packages = ["."]
+  revision = "76fecce4c787fb8eaa21a8755f722d67c53038e1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mdlayher/netlink"
+  packages = [
+    ".",
+    "nlenc"
+  ]
+  revision = "756e798fb38fac19fb2234d3acc32e902bc1af44"
+
+[[projects]]
+  branch = "bikeos"
+  name = "github.com/mdlayher/wifi"
+  packages = [
+    ".",
+    "internal/nl80211"
+  ]
+  source = "github.com/bikeos/wifi"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
@@ -33,6 +57,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/net"
+  packages = ["bpf"]
+  revision = "24dd3780ca4f75fed9f321890729414a4b5d3f13"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = [
     "unix",
@@ -43,6 +73,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3c3038618425288c78d1c3d95733b8c8a17b3669c345d0bcd2f2f86928abed94"
+  inputs-digest = "28f9fd916b1aae6dd9cd51c0b3feac2710063c51ce429f3d6a3e3cc723fa2439"
   solver-name = "gps-cdcl"
   solver-version = 1

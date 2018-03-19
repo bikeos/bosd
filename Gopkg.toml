@@ -7,6 +7,11 @@
   name = "github.com/spf13/cobra"
   version = "0.0.1"
 
+[[constraint]]
+  name = "github.com/mdlayher/wifi"
+  branch = "bikeos"
+  source = "github.com/bikeos/wifi"
+
 [prune]
   non-go = true
   go-tests = true

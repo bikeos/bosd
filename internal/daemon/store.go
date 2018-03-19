@@ -42,11 +42,20 @@ func (s *store) GPS() (io.Writer, error) {
 	if err := os.MkdirAll(gpsd, 0755); err != nil {
 		return nil, err
 	}
-	gpslog := filepath.Join(gpsd, "nmea")
+	gpslog := filepath.Join(gpsd, "nmea.log")
 	f, err := os.OpenFile(gpslog, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
 	s.gps = f
 	return s.gps, nil
+}
+
+// WIFI is the directory for a wifi device.
+func (s *store) Wifi(name string) (string, error) {
+	wifid := filepath.Join(s.nowdir, "wifi", name)
+	if err := os.MkdirAll(wifid, 0755); err != nil {
+		return "", err
+	}
+	return wifid, nil
 }

@@ -1,10 +1,7 @@
 package daemon
 
 import (
-	log "github.com/sirupsen/logrus"
 	"sync"
-
-	"github.com/bikeos/bosd/gps"
 )
 
 type Config struct {
@@ -16,6 +13,8 @@ type daemon struct {
 	wg    sync.WaitGroup
 	errc  chan error
 	donec chan struct{}
+
+	s *store
 }
 
 func Run(cfg Config) error {
@@ -34,16 +33,15 @@ func (d *daemon) run() (err error) {
 		close(d.donec)
 		d.wg.Wait()
 	}()
-	s, serr := newStore(d.cfg.OutDirPath)
-	if serr != nil {
-		return serr
+	if d.s, err = newStore(d.cfg.OutDirPath); err != nil {
+		return err
 	}
-	// TODO: GPS hotplug
-	g, gerr := newGPS()
-	if gerr != nil {
-		return gerr
+	if err = d.runGPS(); err != nil {
+		return err
 	}
-	d.worker(func() error { return gpsLogger(g, s) })
+	if err = d.runWifi(); err != nil {
+		return err
+	}
 	return <-d.errc
 }
 
@@ -56,38 +54,4 @@ func (d *daemon) worker(f func() error) {
 		case <-d.donec:
 		}
 	}()
-}
-
-func newGPS() (*gps.GPS, error) {
-	gs, err := gps.Enumerate()
-	if err != nil {
-		return nil, err
-	}
-	var gg *gps.GPS
-	for _, g := range gs {
-		if gg, err = gps.NewGPS(g); err == nil {
-			log.Infof("reading from GPS %q", g)
-			break
-		}
-	}
-	return gg, err
-}
-
-func gpsLogger(g *gps.GPS, s *store) (err error) {
-	defer func() {
-		if cerr := g.Close(); err == nil {
-			err = cerr
-		}
-	}()
-	w, err := s.GPS()
-	if err != nil {
-		return err
-	}
-	for msg := range g.NMEA() {
-		l := []byte(msg.Line())
-		if _, err := w.Write(l); err != nil {
-			return err
-		}
-	}
-	return nil
 }
