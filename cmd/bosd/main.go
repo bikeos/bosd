@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"syscall"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -55,11 +54,7 @@ func gpsTimeCommand(cmd *cobra.Command, args []string) {
 		if t := msg.Fix(); !t.IsZero() {
 			fmt.Println(t)
 			if flagSetTime {
-				ns := t.UnixNano()
-				s := ns / 1e9
-				us := (ns - s*1e9) * 1e3
-				tv := syscall.Timeval{s, us}
-				fatalIf(syscall.Settimeofday(&tv))
+				setSysTime(t)
 			}
 			return
 		}
