@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/bikeos/bosd/gps"
+	"github.com/bikeos/bosd/internal/bench"
 	"github.com/bikeos/bosd/internal/daemon"
 )
 
@@ -18,6 +20,7 @@ var (
 	flagDevGPS     string
 	flagSetTime    bool
 	flagOutDirPath string
+	flagBenchDur   time.Duration
 )
 
 func init() {
@@ -44,6 +47,14 @@ func init() {
 	}
 	daemonCmd.Flags().StringVar(&flagOutDirPath, "outdir", "/media/sdcard", "directory for recorded data")
 	rootCmd.AddCommand(daemonCmd)
+
+	benchCmd := &cobra.Command{
+		Use:   "bench",
+		Short: "benchmark interfaces",
+		Run:   benchCommand,
+	}
+	benchCmd.Flags().DurationVar(&flagBenchDur, "time", 30*time.Second, "duration of benchmark")
+	rootCmd.AddCommand(benchCmd)
 }
 
 func gpsTimeCommand(cmd *cobra.Command, args []string) {
@@ -67,6 +78,10 @@ func daemonCommand(cmd *cobra.Command, args []string) {
 		OutDirPath: flagOutDirPath,
 	}
 	fatalIf(daemon.Run(cfg))
+}
+
+func benchCommand(cmd *cobra.Command, args []string) {
+	fatalIf(bench.Run(flagBenchDur))
 }
 
 func main() {

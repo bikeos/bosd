@@ -1,6 +1,8 @@
 package wlan
 
 import (
+	"context"
+	"io"
 	"os/exec"
 	"path/filepath"
 
@@ -50,6 +52,15 @@ func (w *Wifi) Tcpdump(logdir string) error {
 		"-z", "gzip",
 	)
 	return w.tcpdump.Run()
+}
+
+func (w *Wifi) TcpdumpReader(ctx context.Context) (io.Reader, error) {
+	cmd := exec.CommandContext(ctx, "/usr/sbin/tcpdump", "-B", "1024", "-U", "-l", "-i", w.iface.Name)
+	r, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	return r, cmd.Start()
 }
 
 // Monitor puts the wifi device into monitor mode.
