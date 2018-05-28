@@ -44,6 +44,10 @@ func (d *daemon) run() (err error) {
 	}
 	if err = d.startAudio(); err != nil {
 		log.Errorf("audio: %v", err)
+	} else {
+		if err = d.startReports(); err != nil {
+			return err
+		}
 	}
 	return <-d.errc
 }

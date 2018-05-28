@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -60,6 +61,24 @@ func (s *store) Wifi(name string) (string, error) {
 		return "", err
 	}
 	return wifid, nil
+}
+
+func (s *store) WifiCurrentPCap(name string) (string, error) {
+	f, err := os.Open(filepath.Join(s.nowdir, "wifi", name))
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	pcaps, err := f.Readdirnames(0)
+	if err != nil {
+		return "", err
+	}
+	for _, pcap := range pcaps {
+		if !strings.HasSuffix(pcap, ".gz") {
+			return filepath.Join(s.nowdir, "wifi", name, pcap), nil
+		}
+	}
+	return "", io.EOF
 }
 
 func syspath(p string) string            { return filepath.Join("/usr/share/bikeos", p) }
