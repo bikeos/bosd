@@ -14,8 +14,9 @@ type wifiMon struct {
 
 var switchTime = 3 * time.Second
 var watchDogTime = 30 * time.Second
+var bootStaggerTime = 500 * time.Millisecond
 
-func (d *daemon) runWifi() error {
+func (d *daemon) startWifi() error {
 	wm := &wifiMon{devs: make(map[string]*wlan.Wifi)}
 	if _, werr := wlan.Enumerate(); werr != nil {
 		return werr
@@ -26,11 +27,6 @@ func (d *daemon) runWifi() error {
 
 func (wm *wifiMon) monDevs(s *store) error {
 	for {
-		updateTime := switchTime
-		if len(wm.devs) > 0 {
-			updateTime = watchDogTime
-		}
-		time.Sleep(updateTime)
 		wdevs, werr := wlan.Enumerate()
 		if werr != nil {
 			return werr
@@ -55,8 +51,19 @@ func (wm *wifiMon) monDevs(s *store) error {
 				log.Error(err)
 			}
 			wm.devs[n] = w
+
+			// Booting all devices at once seems to drain
+			// a lot of power; play it safe and stagger.
+			time.Sleep(bootStaggerTime)
+
 			go wifiLogger(w, s)
 		}
+
+		updateTime := switchTime
+		if len(wm.devs) > 0 {
+			updateTime = watchDogTime
+		}
+		time.Sleep(updateTime)
 	}
 	return nil
 }

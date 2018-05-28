@@ -1,12 +1,14 @@
 package daemon
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bikeos/bosd/gps"
 )
 
-func (d *daemon) runGPS() error {
+func (d *daemon) startGPS() error {
 	// TODO: GPS hotplug
 	gs, err := gps.Enumerate()
 	if err != nil {
@@ -21,6 +23,9 @@ func (d *daemon) runGPS() error {
 	}
 	if err != nil {
 		return err
+	}
+	if gg == nil {
+		return fmt.Errorf("gps: no gps found")
 	}
 	d.worker(func() error { return gpsLogger(gg, d.s) })
 	return nil

@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -18,14 +20,12 @@ type daemon struct {
 }
 
 func Run(cfg Config) error {
-	errc := make(chan error, 1)
 	d := &daemon{
 		cfg:   cfg,
 		errc:  make(chan error),
 		donec: make(chan struct{}),
 	}
-	go func() { errc <- d.run() }()
-	return <-errc
+	return d.run()
 }
 
 func (d *daemon) run() (err error) {
@@ -36,11 +36,14 @@ func (d *daemon) run() (err error) {
 	if d.s, err = newStore(d.cfg.OutDirPath); err != nil {
 		return err
 	}
-	if err = d.runGPS(); err != nil {
+	if err = d.startGPS(); err != nil {
 		return err
 	}
-	if err = d.runWifi(); err != nil {
+	if err = d.startWifi(); err != nil {
 		return err
+	}
+	if err = d.startAudio(); err != nil {
+		log.Errorf("audio: %v", err)
 	}
 	return <-d.errc
 }

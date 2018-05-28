@@ -8,20 +8,22 @@ import (
 )
 
 type store struct {
-	nowdir string
-	gps    *os.File
+	basedir string
+	nowdir  string
+	gps     *os.File
 }
 
-func newStore(outdir string) (*store, error) {
-	if _, err := os.Stat(outdir); err != nil {
+func newStore(basedir string) (*store, error) {
+	if _, err := os.Stat(basedir); err != nil {
 		return nil, err
 	}
-	nd := filepath.Join(outdir, time.Now().UTC().Format(time.RFC3339))
+	nd := filepath.Join(basedir, "log", time.Now().UTC().Format(time.RFC3339))
 	if err := os.MkdirAll(nd, 0755); err != nil {
 		return nil, err
 	}
 	s := &store{
-		nowdir: nd,
+		basedir: basedir,
+		nowdir:  nd,
 	}
 	return s, nil
 }
@@ -58,4 +60,15 @@ func (s *store) Wifi(name string) (string, error) {
 		return "", err
 	}
 	return wifid, nil
+}
+
+func syspath(p string) string            { return filepath.Join("/usr/share/bikeos", p) }
+func (s *store) cfgpath(p string) string { return filepath.Join(s.basedir, "config", "boot.mp3") }
+
+func (s *store) ConfigPath(p string) string {
+	cpath := s.cfgpath(p)
+	if _, err := os.Stat(cpath); err == nil {
+		return cpath
+	}
+	return syspath(p)
 }
