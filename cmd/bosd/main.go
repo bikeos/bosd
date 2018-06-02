@@ -10,6 +10,7 @@ import (
 	"github.com/bikeos/bosd/gps"
 	"github.com/bikeos/bosd/internal/bench"
 	"github.com/bikeos/bosd/internal/daemon"
+	"github.com/bikeos/bosd/internal/ingest"
 )
 
 var (
@@ -20,6 +21,7 @@ var (
 	flagDevGPS     string
 	flagSetTime    bool
 	flagOutDirPath string
+	flagLogDirPath string
 	flagBenchDur   time.Duration
 )
 
@@ -55,6 +57,15 @@ func init() {
 	}
 	benchCmd.Flags().DurationVar(&flagBenchDur, "time", 30*time.Second, "duration of benchmark")
 	rootCmd.AddCommand(benchCmd)
+
+	ingestCmd := &cobra.Command{
+		Use:   "ingest",
+		Short: "ingest log data into json",
+		Run:   ingestCommand,
+	}
+	ingestCmd.Flags().StringVar(&flagLogDirPath, "logdir", "/media/sdcard/log", "directory for log data")
+	rootCmd.AddCommand(ingestCmd)
+
 }
 
 func gpsTimeCommand(cmd *cobra.Command, args []string) {
@@ -82,6 +93,10 @@ func daemonCommand(cmd *cobra.Command, args []string) {
 
 func benchCommand(cmd *cobra.Command, args []string) {
 	fatalIf(bench.Run(flagBenchDur))
+}
+
+func ingestCommand(cmd *cobra.Command, args []string) {
+	fatalIf(ingest.Run(flagLogDirPath))
 }
 
 func main() {
