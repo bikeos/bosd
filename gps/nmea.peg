@@ -4,10 +4,13 @@ package gps
 type nmeaGrammar Peg {
 	nmea NMEA
 	rmc RMC
+	msg NMEAi
 }
 
-NMEA <- <'$GP' cmd '\n'> { p.nmea = &nmeaLine{text, p.nmea} }
-cmd <- RMC / unk
+NMEA <- <'$GP' cmd '\n'> { p.nmea = NMEA{text, p.msg} }
+
+cmd <-	RMC { r := p.rmc; p.msg = &r } /
+	unk { p.msg = &nmeaUnk{} }
 
 # RMC - NMEA has its own version of essential gps pvt (position, velocity, time) data.
 # It is called RMC, The Recommended Minimum, which will look similar to:
@@ -24,13 +27,13 @@ cmd <- RMC / unk
 #     230318       Date - 23rd of March 2018
 #     003.1,W      Magnetic Variation
 #     *6A          The checksum data, always begins with *
-RMC <- 'RMC'		{ p.nmea = &p.rmc }
+RMC <- 'RMC'
 	',' <fix>	{ p.rmc.fix = text }
 	',' <status>	{ p.rmc.status = text }
 	',' (<lat>	{ p.rmc.lat = text })?
-	',' ns?
+	',' (<ns>	{ p.rmc.ns = text})?
 	',' (<lon>	{ p.rmc.lon = text })?
-	',' we?
+	',' (<we>	{ p.rmc.we = text})?
 	',' (<knots>	{ p.rmc.knots.parse(text) })?
 	',' (<track>	{ p.rmc.track = text })?
 	',' <date>	{ p.rmc.date = text }
@@ -53,4 +56,4 @@ magvar <- [0-9]+'.'[0-9]+
 chksum <- '*'[0-9A-F][0-9A-F]
 
 # Unknown command
-unk <- (!'\n'.)* { p.nmea = &nmeaBase{} }
+unk <- (!'\n'.)*

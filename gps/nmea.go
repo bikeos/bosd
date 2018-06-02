@@ -2,41 +2,45 @@
 package gps
 
 import (
+	"math"
 	"strconv"
 	"time"
 )
 
-type NMEA interface {
-	// Fix is the time of the message's Fix, if any.
-	Fix() time.Time
-	// Line returns the raw NMEA string.
-	Line() string
-}
-
-type nmeaBase struct{}
-
-func (n *nmeaBase) Fix() (ret time.Time) { return ret }
-func (n *nmeaBase) Line() string         { panic("oops") }
-
-type nmeaLine struct {
+type NMEA struct {
 	line string
-	NMEA
+	NMEAi
 }
 
-func (u *nmeaLine) Line() string { return u.line }
+func (n NMEA) Msg() NMEAi { return n.NMEAi }
+
+// Line returns the raw NMEA string.
+func (n NMEA) Line() string { return n.line }
+
+type NMEAi interface {
+	Fix() time.Time
+	Longitude() float64
+	Latitude() float64
+}
+
+type nmeaUnk struct{}
+
+func (n *nmeaUnk) Fix() (ret time.Time) { return ret }
+func (n *nmeaUnk) Longitude() float64   { return math.NaN() }
+func (n *nmeaUnk) Latitude() float64    { return math.NaN() }
 
 type RMC struct {
 	fix    string
 	status string
 	lat    string
+	ns     string
 	lon    string
+	we     string
 	knots  Knots
 	track  string
 	date   string
 	magvar string
 	chksum string
-
-	nmeaBase
 }
 
 type Knots float64
@@ -70,4 +74,32 @@ func (r *RMC) Fix() time.Time {
 		mustInt(r.fix[4:6]),
 		0,
 		time.UTC)
+}
+
+func (r *RMC) Longitude() float64 {
+	if len(r.lon) == 0 {
+		return math.NaN()
+	}
+	// DDDMM.MMMMM,W = longitude
+	londeg, _ := strconv.ParseInt(r.lon[0:3], 10, 32)
+	lonmin, _ := strconv.ParseFloat(r.lon[3:], 64)
+	lonv := float64(londeg) + (lonmin / 60.0)
+	if r.we == "W" {
+		lonv = -lonv
+	}
+	return lonv
+}
+
+func (r *RMC) Latitude() float64 {
+	if len(r.lat) == 0 {
+		return math.NaN()
+	}
+	// DDMM.MMMMM,N = latitude
+	latdeg, _ := strconv.ParseInt(r.lat[0:2], 10, 32)
+	latmin, _ := strconv.ParseFloat(r.lat[2:], 64)
+	latv := float64(latdeg) + (latmin / 60.0)
+	if r.ns == "S" {
+		latv = -latv
+	}
+	return latv
 }
