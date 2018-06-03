@@ -17,6 +17,9 @@ type daemon struct {
 	donec chan struct{}
 
 	s *store
+
+	gs   gpsStatus
+	gsMu sync.RWMutex
 }
 
 func Run(cfg Config) error {

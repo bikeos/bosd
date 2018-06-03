@@ -2,11 +2,18 @@ package daemon
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bikeos/bosd/gps"
 )
+
+type gpsStatus struct {
+	when time.Time
+	lat  float64
+	lon  float64
+}
 
 func (d *daemon) startGPS() error {
 	// TODO: GPS hotplug
@@ -27,11 +34,11 @@ func (d *daemon) startGPS() error {
 	if gg == nil {
 		return fmt.Errorf("gps: no gps found")
 	}
-	d.worker(func() error { return gpsLogger(gg, d.s) })
+	d.worker(func() error { return d.gpsLogger(gg, d.s) })
 	return nil
 }
 
-func gpsLogger(g *gps.GPS, s *store) (err error) {
+func (d *daemon) gpsLogger(g *gps.GPS, s *store) (err error) {
 	defer func() {
 		if cerr := g.Close(); err == nil {
 			err = cerr
@@ -42,6 +49,16 @@ func gpsLogger(g *gps.GPS, s *store) (err error) {
 		return err
 	}
 	for msg := range g.NMEA() {
+		if !msg.Fix().IsZero() {
+			lat, lon := msg.Latitude(), msg.Longitude()
+			if lat != lat {
+				continue
+			}
+			newStatus := gpsStatus{time.Now(), lat, lon}
+			d.gsMu.Lock()
+			d.gs = newStatus
+			d.gsMu.Unlock()
+		}
 		l := []byte(msg.Line())
 		if _, err := w.Write(l); err != nil {
 			return err
