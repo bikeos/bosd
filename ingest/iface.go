@@ -66,7 +66,7 @@ func logInterfaces(logDir string) (ifaces []string, err error) {
 }
 
 func newPacketDirChan(ifaceDir string) <-chan wlan.Packet {
-	names, err := timeSortedNames(ifaceDir)
+	names, err := pcapSortedNames(ifaceDir)
 	if err != nil {
 		ch := make(chan wlan.Packet)
 		close(ch)

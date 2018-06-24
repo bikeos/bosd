@@ -7,7 +7,7 @@ import (
 )
 
 func NewGPSChan(baseDir string) (<-chan gps.NMEA, error) {
-	names, err := timeSortedNames(baseDir)
+	names, err := sortedNames(baseDir)
 	if err != nil {
 		return nil, err
 	}
