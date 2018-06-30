@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,15 +22,16 @@ var (
 		Use:   "bosd",
 		Short: "The multi-purpose bikeOS binary and daemon.",
 	}
+	flagDataDir    string
 	flagDevGPS     string
 	flagSetTime    bool
-	flagOutDirPath string
 	flagLogDirPath string
 	flagBenchDur   time.Duration
 )
 
 func init() {
 	cobra.EnablePrefixMatching = true
+	rootCmd.PersistentFlags().StringVar(&flagDataDir, "data-dir", "/media/sdcard", "bosd data directory")
 
 	gpsCmd := &cobra.Command{
 		Use:   "gps <subcommand> <value>",
@@ -47,7 +52,6 @@ func init() {
 		Short: "start the bikeOS daemon",
 		Run:   daemonCommand,
 	}
-	daemonCmd.Flags().StringVar(&flagOutDirPath, "outdir", "/media/sdcard", "directory for recorded data")
 	rootCmd.AddCommand(daemonCmd)
 
 	benchCmd := &cobra.Command{
@@ -63,9 +67,8 @@ func init() {
 		Short: "ingest log data into json",
 		Run:   ingestCommand,
 	}
-	ingestCmd.Flags().StringVar(&flagLogDirPath, "logdir", "/media/sdcard/log", "directory for log data")
+	ingestCmd.Flags().StringVar(&flagLogDirPath, "logdir", "", "directory for log data")
 	rootCmd.AddCommand(ingestCmd)
-
 }
 
 func gpsTimeCommand(cmd *cobra.Command, args []string) {
@@ -84,9 +87,26 @@ func gpsTimeCommand(cmd *cobra.Command, args []string) {
 	panic("gps closed: " + g.Close().Error())
 }
 
+func dataDirExec(dir string) {
+	bosd := filepath.Join(dir, "bosd-"+runtime.GOARCH)
+	if os.Args[0] == bosd {
+		// Already running from data directory.
+		log.Infof("using custom bosd %q", bosd)
+		return
+	}
+	args := []string{bosd}
+	args = append(args, os.Args[1:]...)
+	fmt.Println(bosd)
+	fmt.Println(args)
+	syscall.Exec(bosd, args, os.Environ())
+	// Exec failed; stick to this binary.
+	log.Infof("using system bosd; searched %q", bosd)
+}
+
 func daemonCommand(cmd *cobra.Command, args []string) {
+	dataDirExec(flagDataDir)
 	cfg := daemon.Config{
-		OutDirPath: flagOutDirPath,
+		OutDirPath: flagDataDir,
 	}
 	fatalIf(daemon.Run(cfg))
 }
@@ -96,7 +116,11 @@ func benchCommand(cmd *cobra.Command, args []string) {
 }
 
 func ingestCommand(cmd *cobra.Command, args []string) {
-	fatalIf(ingest.Run(flagLogDirPath))
+	logdir := flagLogDirPath
+	if len(logdir) == 0 {
+		logdir = filepath.Join(flagDataDir, "log")
+	}
+	fatalIf(ingest.Run(logdir))
 }
 
 func main() {
