@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/gvalkov/golang-evdev"
+  packages = ["."]
+  revision = "b6f418b1fe5af0386c81f387227f36d4801883b0"
+
+[[projects]]
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
@@ -29,6 +35,7 @@
     ".",
     "internal/nl80211"
   ]
+  revision = ""
   source = "github.com/bikeos/wifi"
 
 [[projects]]
@@ -73,6 +80,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "28f9fd916b1aae6dd9cd51c0b3feac2710063c51ce429f3d6a3e3cc723fa2439"
+  inputs-digest = "aae9897eb62f14f07918ff9d7e7e1e9f2695a6d2f72a5e08cbac98e625d3277b"
   solver-name = "gps-cdcl"
   solver-version = 1

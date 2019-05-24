@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -21,11 +22,13 @@ func (d *daemon) startWifi() error {
 	if _, werr := wlan.Enumerate(); werr != nil {
 		return werr
 	}
-	d.worker(func() error { return wm.monDevs(d.s) })
+	d.worker(func(ctx context.Context) error {
+		return wm.monDevs(ctx, d.s)
+	})
 	return nil
 }
 
-func (wm *wifiMon) monDevs(s *store) error {
+func (wm *wifiMon) monDevs(ctx context.Context, s *store) error {
 	for {
 		wdevs, werr := wlan.Enumerate()
 		if werr != nil {
@@ -37,7 +40,6 @@ func (wm *wifiMon) monDevs(s *store) error {
 		}
 		for n := range wm.devs {
 			if _, ok := curdevs[n]; !ok {
-				/* remove */
 				log.Infof("wifi %q removed", n)
 			}
 		}
@@ -56,14 +58,23 @@ func (wm *wifiMon) monDevs(s *store) error {
 			// a lot of power; play it safe and stagger.
 			time.Sleep(bootStaggerTime)
 
-			go wifiLogger(w, s)
+			go func() {
+				// Treat logger errors as soft errors.
+				if err := wifiLogger(w, s); err != nil {
+					log.Errorf("wifi: %v", err)
+				}
+			}()
 		}
 
 		updateTime := switchTime
 		if len(wm.devs) > 0 {
 			updateTime = watchDogTime
 		}
-		time.Sleep(updateTime)
+		select {
+		case <-time.After(updateTime):
+		case <-ctx.Done():
+			return nil
+		}
 	}
 	return nil
 }

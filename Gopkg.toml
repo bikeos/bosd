@@ -12,6 +12,10 @@
   branch = "bikeos"
   source = "github.com/bikeos/wifi"
 
+[[constraint]]
+  name = "github.com/gvalkov/golang-evdev"
+  branch = "master"
+
 [prune]
   non-go = true
   go-tests = true

@@ -1,7 +1,9 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -34,7 +36,9 @@ func (d *daemon) startGPS() error {
 	if gg == nil {
 		return fmt.Errorf("gps: no gps found")
 	}
-	d.worker(func() error { return d.gpsLogger(gg, d.s) })
+	d.worker(func(ctx context.Context) error {
+		return d.gpsLogger(gg, d.s)
+	})
 	return nil
 }
 
@@ -48,20 +52,28 @@ func (d *daemon) gpsLogger(g *gps.GPS, s *store) (err error) {
 	if err != nil {
 		return err
 	}
-	for msg := range g.NMEA() {
-		if !msg.Fix().IsZero() {
-			lat, lon := msg.Latitude(), msg.Longitude()
-			if lat != lat {
-				continue
+	for {
+		select {
+		case msg, ok := <-g.NMEA():
+			if !ok {
+				return io.EOF
 			}
-			newStatus := gpsStatus{time.Now(), lat, lon}
-			d.gsMu.Lock()
-			d.gs = newStatus
-			d.gsMu.Unlock()
-		}
-		l := []byte(msg.Line())
-		if _, err := w.Write(l); err != nil {
-			return err
+			if !msg.Fix().IsZero() {
+				lat, lon := msg.Latitude(), msg.Longitude()
+				if lat != lat {
+					continue
+				}
+				newStatus := gpsStatus{time.Now(), lat, lon}
+				d.gsMu.Lock()
+				d.gs = newStatus
+				d.gsMu.Unlock()
+			}
+			l := []byte(msg.Line())
+			if _, err := w.Write(l); err != nil {
+				return err
+			}
+		case <-d.ctx.Done():
+			return nil
 		}
 	}
 	return nil
