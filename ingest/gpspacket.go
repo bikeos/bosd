@@ -15,8 +15,8 @@ type GPSPacket struct {
 func (g *GPSPacket) Loc() gps.NMEA    { return g.loc }
 func (g *GPSPacket) Pkt() wlan.Packet { return g.pkt }
 
-func NewGPSPackets(baseDir string) (<-chan GPSPacket, error) {
-	ifaces, err := Interfaces(baseDir)
+func NewGPSPackets(dirs []string) (<-chan GPSPacket, error) {
+	ifaces, err := Interfaces(dirs)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func NewGPSPackets(baseDir string) (<-chan GPSPacket, error) {
 		}
 	}
 	for i := range ifchs {
-		ch, err := NewIfacePacketChan(baseDir, ifaces[i])
+		ch, err := NewIfacePacketChan(dirs, ifaces[i])
 		if err != nil {
 			closeifchs()
 			return nil, err
@@ -39,7 +39,7 @@ func NewGPSPackets(baseDir string) (<-chan GPSPacket, error) {
 		ifchs[i] = ch
 	}
 
-	gpsc, err := NewGPSChan(baseDir)
+	gpsc, err := NewGPSChan(dirs)
 	if err != nil {
 		closeifchs()
 		return nil, err

@@ -9,14 +9,10 @@ import (
 	"github.com/bikeos/bosd/wlan"
 )
 
-func Interfaces(baseDir string) ([]string, error) {
-	fi, err := ioutil.ReadDir(baseDir)
-	if err != nil {
-		return nil, err
-	}
+func Interfaces(tripDirs []string) ([]string, error) {
 	ifaceset := make(map[string]struct{})
-	for _, info := range fi {
-		ifaces, err := logInterfaces(path.Join(baseDir, info.Name()))
+	for _, d := range tripDirs {
+		ifaces, err := logInterfaces(d)
 		if err != nil {
 			return nil, err
 		}
@@ -31,16 +27,12 @@ func Interfaces(baseDir string) ([]string, error) {
 	return ifaces, nil
 }
 
-func NewIfacePacketChan(baseDir, iface string) (<-chan wlan.Packet, error) {
-	names, err := timeSortedNames(baseDir)
-	if err != nil {
-		return nil, err
-	}
+func NewIfacePacketChan(tripDirs []string, iface string) (<-chan wlan.Packet, error) {
 	pktc := make(chan wlan.Packet, 16)
 	go func() {
 		defer close(pktc)
-		for _, name := range names {
-			d := path.Join(baseDir, name, "wifi", iface)
+		for _, name := range tripDirs {
+			d := path.Join(name, "wifi", iface)
 			if _, err := os.Stat(d); err != nil {
 				continue
 			}
@@ -52,8 +44,8 @@ func NewIfacePacketChan(baseDir, iface string) (<-chan wlan.Packet, error) {
 	return pktc, nil
 }
 
-func logInterfaces(logDir string) (ifaces []string, err error) {
-	fi, err := ioutil.ReadDir(path.Join(logDir, "wifi"))
+func logInterfaces(tripDir string) (ifaces []string, err error) {
+	fi, err := ioutil.ReadDir(path.Join(tripDir, "wifi"))
 	if err != nil {
 		return nil, err
 	}

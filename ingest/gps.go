@@ -6,16 +6,12 @@ import (
 	"github.com/bikeos/bosd/gps"
 )
 
-func NewGPSChan(baseDir string) (<-chan gps.NMEA, error) {
-	names, err := sortedNames(baseDir)
-	if err != nil {
-		return nil, err
-	}
+func NewGPSChan(dirs []string) (<-chan gps.NMEA, error) {
 	ch := make(chan gps.NMEA, 8)
 	go func() {
 		defer close(ch)
-		for _, name := range names {
-			p := path.Join(baseDir, name, "gps", "nmea.log")
+		for _, name := range dirs {
+			p := path.Join(name, "gps", "nmea.log")
 			g, err := gps.NewGPS(p)
 			if err != nil {
 				continue

@@ -14,6 +14,7 @@ import (
 	"github.com/bikeos/bosd/gps"
 	"github.com/bikeos/bosd/internal/bench"
 	"github.com/bikeos/bosd/internal/daemon"
+	"github.com/bikeos/bosd/internal/http"
 	"github.com/bikeos/bosd/internal/ingest"
 )
 
@@ -22,11 +23,12 @@ var (
 		Use:   "bosd",
 		Short: "The multi-purpose bikeOS binary and daemon.",
 	}
-	flagDataDir    string
-	flagDevGPS     string
-	flagSetTime    bool
-	flagLogDirPath string
-	flagBenchDur   time.Duration
+	flagBenchDur        time.Duration
+	flagDataDir         string
+	flagDevGPS          string
+	flagHttpRootDirPath string
+	flagLogDirPath      string
+	flagSetTime         bool
 )
 
 func init() {
@@ -69,6 +71,15 @@ func init() {
 	}
 	ingestCmd.Flags().StringVar(&flagLogDirPath, "logdir", "", "directory for log data")
 	rootCmd.AddCommand(ingestCmd)
+
+	httpCmd := &cobra.Command{
+		Use:   "http",
+		Short: "serve standalone http interface",
+		Run:   httpCommand,
+	}
+	httpCmd.Flags().StringVar(&flagLogDirPath, "logdir", "", "directory for log data")
+	httpCmd.Flags().StringVar(&flagHttpRootDirPath, "rootdir", "", "directory for http resources")
+	rootCmd.AddCommand(httpCmd)
 }
 
 func gpsTimeCommand(cmd *cobra.Command, args []string) {
@@ -121,6 +132,17 @@ func ingestCommand(cmd *cobra.Command, args []string) {
 		logdir = filepath.Join(flagDataDir, "log")
 	}
 	fatalIf(ingest.Run(logdir))
+}
+
+func httpCommand(cmd *cobra.Command, args []string) {
+	cfg := http.ServerConfig{
+		ListenAddr: "localhost:8800",
+		RootDir:    flagHttpRootDirPath,
+		LogDir:     flagLogDirPath,
+	}
+	if err := http.Serve(cfg); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
